@@ -1,7 +1,4 @@
-﻿using Microsoft.VisualBasic.FileIO;
-using System.Collections;
-using System.Runtime.InteropServices;
-using System.Transactions;
+﻿using System.Collections;
 
 
 namespace MyBSTContainer
@@ -12,7 +9,13 @@ namespace MyBSTContainer
 
         public int Count
         {
-            get { return (int)size; }
+            get {
+                if (root == null)
+                {
+                    return 0;
+                }
+                return root.Count; 
+            }
         }
         public bool IsReadOnly { get; }
 
@@ -20,14 +23,10 @@ namespace MyBSTContainer
         { 
             if (root == null)
             {
-                root = new Node(item);
-                size++;
+                root = new Node(item, this);
                 return true;
             }
-            bool result = root.Insert(item);
-            if (result)
-                size++;
-            return result;
+            return root.Insert(item);
             
         }
 
@@ -193,10 +192,6 @@ namespace MyBSTContainer
                     root = left_tree;
                 
                 }
-            }
-            if (result)
-            {
-                size--;
             }
             return result;
 

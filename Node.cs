@@ -1,25 +1,24 @@
-﻿using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.FileIO;
-using Microsoft.Win32;
-using System.Diagnostics;
-using System.Reflection.Metadata.Ecma335;
-using System.Xml.Linq;
-
-namespace MyBSTContainer
+﻿namespace MyBSTContainer
 {
     partial class TreeContainer<T>
     {
-        internal class Node(T value)
+        internal class Node(T value, TreeContainer<T> tree)
         {
             public T Value { get; private set; } = value;
 
             Node? parent = null;
             Node? left_child = null;
             Node? right_child = null;
+            TreeContainer<T> tree = tree;
 
             int height = 1;
             int diff = 0;
             int children = 1;
+
+            public int Count
+            {
+                get { return children; }
+            }
 
             internal Node? LeftChild { get { return left_child; } }
             internal Node? RightChild { get { return right_child; } }
@@ -51,6 +50,15 @@ namespace MyBSTContainer
                 {
                     parent.RecountChildren();
                 }
+            }
+
+            private void Reheight()
+            {
+                int right_height = right_child != null ? right_child.height : 0;
+                int left_height = left_child != null ? left_child.height : 0;
+
+                height = 1 + (right_height > left_height ? right_height : left_height);
+                diff = left_height - right_height;
             }
 
 
@@ -87,24 +95,37 @@ namespace MyBSTContainer
                 {
                     if (left_child == null)
                     {
-                        left_child = new Node(item) { parent = this };
-                        return true;
+                        left_child = new Node(item, tree) { parent = this };
                     }
                     else
                     {
-                        return left_child.Insert(item);
+                        bool insert_result = left_child.Insert(item);
+                        if (insert_result)
+                        {
+                            Reheight();
+                            RecountChildren();
+                            Rebalance();
+                        }
+                        return insert_result;
+                        
                     }
                 }
                 else if (result > 0)
                 {
                     if (right_child == null)
                     {
-                        right_child = new Node(item) { parent = this };
-                        return true;
+                        right_child = new Node(item, tree) { parent = this };
                     }
                     else
                     {
-                        return right_child.Insert(item);
+                        bool insert_result = right_child.Insert(item);
+                        if (insert_result)
+                        {
+                            Reheight();
+                            RecountChildren();
+                            Rebalance();
+                        }
+                        return insert_result;
                     }
 
                 }
@@ -113,7 +134,11 @@ namespace MyBSTContainer
                     return false;
                 }
 
-                // TODO recalculate height
+                Reheight();
+                RecountChildren();
+                Rebalance();
+
+                return true;
             }
 
             internal bool Delete(T item)
@@ -127,7 +152,14 @@ namespace MyBSTContainer
                     }
                     else
                     {
-                        return left_child.Delete(item);
+                        bool remove_result = left_child.Delete(item);
+                        if (remove_result)
+                        {
+                            Reheight();
+                            RecountChildren();
+                            Rebalance();
+                        }
+                        return remove_result;
                     }
                 }
                 else if (result > 0)
@@ -138,7 +170,14 @@ namespace MyBSTContainer
                     }
                     else
                     {
-                        return right_child.Delete(item);
+                        bool remove_result = right_child.Delete(item);
+                        if (remove_result)
+                        {
+                            Reheight();
+                            RecountChildren();
+                            Rebalance();
+                        }
+                        return remove_result;
                     }
 
                 }
@@ -160,6 +199,9 @@ namespace MyBSTContainer
                     {
                         DeleteNodeWithChildren();
                     }
+                    Reheight();
+                    RecountChildren();
+                    Rebalance();
                     return true;
                 }
 
@@ -231,7 +273,6 @@ namespace MyBSTContainer
                 T value_of_next_node = next_node.Value;
                 Delete(next_node.Value);
                 Value = value_of_next_node;
-                Untie();
             }
 
             internal Node? NextNode
@@ -417,25 +458,25 @@ namespace MyBSTContainer
                     {
                         return parent;
                     }
-                    while (parent != null && parent.left_child == null)
-                    {
-                        current_node = parent;
-                        parent = current_node.parent;
-                    }
+                    
                     if (parent.left_child != null)
                     {
                         current_node = parent.left_child;
                     }
 
-                    while (current_node.right_child != null || current_node.left_child != null)
+                    while (current_node != null)
                     {
                         if (current_node.right_child != null)
                         {
                             current_node = current_node.right_child;
                         }
-                        else
+                        else if (current_node.left_child != null)
                         {
                             current_node = current_node.left_child;
+                        }
+                        else
+                        {
+                            break;
                         }
                     }
                     return current_node;
@@ -460,15 +501,19 @@ namespace MyBSTContainer
                             return current_node;
                         }
                         current_node = current_node.right_child;
-                        while (current_node.left_child != null || current_node.right_child != null)
+                        while (current_node != null) 
                         {
                             if (current_node.left_child != null)
                             {
                                 current_node = current_node.left_child;
                             }
-                            else
+                            else if (current_node.right_child != null)
                             {
                                 current_node = current_node.right_child;
+                            }
+                            else
+                            {
+                                break;
                             }
                         }
                         return current_node;
@@ -504,6 +549,144 @@ namespace MyBSTContainer
                         parent = current_node.parent;
                     }
                     return null;
+                }
+            }
+
+            void RotateLeft()
+            {
+                Node? b = right_child;
+                if (b == null)
+                {
+                    return;
+                }
+                Node? child = b.left_child;
+                b.left_child = this;
+                if (parent != null)
+                {
+                    if (this.Equals(parent.left_child))
+                    {
+                        parent.left_child = b;
+                    }
+                    else if (this.Equals(parent.right_child))
+                    {
+                        parent.right_child = b;
+                    }
+                    b.parent = parent;
+                }
+                if (this.Equals(tree.root))
+                {
+                    tree.root = b;
+                    b.parent = null;
+                }
+                parent = b;
+
+                if (child != null)
+                {
+                    right_child = child;
+                    child.parent = this;
+                }
+                else
+                {
+                    right_child = null;
+                }
+                Reheight();
+                b.Reheight();
+                RecountChildren();
+                b.RecountChildren();
+            }
+
+            void RotateRight()
+            {
+                Node? b = left_child;
+                if (b == null)
+                {
+                    return;
+                }
+                Node? child = b.right_child;
+                b.right_child = this;
+                if (parent != null)
+                {
+                    if (this.Equals(parent.left_child))
+                    {
+                        parent.left_child = b;
+                    }
+                    else if (this.Equals(parent.right_child))
+                    {
+                        parent.right_child = b;
+                    }
+                    b.parent = parent;
+                }
+                if (this.Equals(tree.root))
+                {
+                    tree.root = b;
+                    b.parent = null;
+                }
+                parent = b;
+
+                if (child != null)
+                {
+                    left_child = child;
+                    child.parent = this;
+                }
+                else
+                {
+                    left_child = null;
+                }
+                Reheight();
+                b.Reheight();
+                RecountChildren();
+                b.RecountChildren();
+            }
+
+            void BigRotateLeft()
+            {
+                if (right_child != null)
+                {
+                    right_child.RotateRight();
+                    RotateLeft();
+                }
+            }
+
+            void BigRotateRight()
+            {
+                if (left_child != null)
+                {
+                    left_child.RotateLeft();
+                    RotateRight();
+                }
+            }
+
+            void Rebalance()
+            {
+                if (diff < 2 && diff > -2)
+                {
+                    return;
+                }
+                Node? b = left_child;
+                if (b != null)
+                {
+                    Node? d = b.right_child;
+                    if (d != null && diff == 2 && b.diff == -1)
+                    {
+                        BigRotateRight();
+                    }
+                    if (diff == 2 && b.diff >= 0)
+                    {
+                        RotateRight();
+                    }
+                }
+                Node? c = right_child;
+                if (c != null)
+                {
+                    Node? d = c.left_child;
+                    if (d != null && diff == -2 && c.diff == 1)
+                    {
+                        BigRotateLeft();
+                    }
+                    if (diff == -2 && c.diff <= 0)
+                    {
+                        RotateLeft();
+                    }
                 }
             }
         }

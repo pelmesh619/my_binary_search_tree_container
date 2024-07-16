@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace MyBSTContainer
+﻿namespace MyBSTContainer
 {
     public partial class TreeContainer<T> : ISet<T>
     {
 
         Node? root = null;
-        private UIntPtr size = 0;
 
         Node? LeastNode
         {

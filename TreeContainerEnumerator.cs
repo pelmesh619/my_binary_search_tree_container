@@ -23,7 +23,8 @@ namespace MyBSTContainer
                     {
                         return current_node.Value;
                     }
-                    return default;
+                    throw new NullReferenceException();
+
                 }
             }
             object IEnumerator.Current => (object)Current;
