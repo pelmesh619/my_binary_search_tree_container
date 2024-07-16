@@ -5,8 +5,6 @@ VisualStudioVersion = 17.9.34607.119
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MyBSTContainer", "MyBSTContainer.csproj", "{B2475643-1A65-4C81-99C3-F47DBF03D860}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BSTContainerTest", "..\..\CSProjects\BSTContainerTest\BSTContainerTest.csproj", "{050A3401-A0C6-4E8D-A9C4-4A34FB970446}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
